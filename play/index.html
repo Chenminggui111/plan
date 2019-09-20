@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="viewport"
+        content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <title>Document</title>
+    <script src="./lufylegend-1.10.1.min.js"></script>
+    <script>
+
+
+    </script>
+</head>
+
+<body>
+    <div id=legend></div>
+</body>
+
+</html>
+
+<script>
+    init(30, 'legend', 320, 568, main);
+
+    var imgData = [
+        { name: "background", path: "./image/background.png" },
+        { name: "loading", path: "./image/loading.png" },
+        { name: "me", path: "./image/me.png" },
+        { name: "item0", path: "./image/item0.png" },
+        { name: "item1", path: "./image/item1.png" },
+        { name: "item2", path: "./image/item2.png" },
+        { name: "boom1", path: "./image/boom1.GIF" },
+        { name: "boom2", path: "./image/boom2.GIF" },
+        { name: "boom3", path: "./image/boom3.GIF" },
+        { name: "boomme", path: "./image/boomme.GIF" },
+        { name: "bibi", path: "./image/bullet1.png" },
+    ];
+    var imglist;
+
+    var backLayer, playerLayer, itemLayer, overLayer, loadingLayer, BibiLayer;
+    var hero;
+    var bibi;
+    var step = 50, stepindex = 0;
+    var stepindex1 = 0;
+    var hitBibi, hitItem;
+
+    var point = 0, poinTxt;
+
+    function main() {
+        loadingLayer = new LoadingSample5();
+        addChild(loadingLayer);
+        LLoadManage.load(imgData, function (progress) {
+            loadingLayer.setProgress(progress);
+        }, gameInit);
+    }
+
+    function gameInit(result) {
+        removeChild(loadingLayer);
+        imglist = result;
+
+        backLayer = new LSprite();
+
+        addChild(backLayer);
+
+        addBackground();
+
+        addPlayer();
+
+        BibiLayer = new LSprite();
+        backLayer.addChild(BibiLayer);
+        addBIBI();
+        itemLayer = new LSprite();
+        backLayer.addChild(itemLayer);
+        addItem();
+        overLayer = new LSprite();
+        backLayer.addChild(overLayer);
+        addText();
+        addEvent();
+    }
+    function addEvent() {
+        backLayer.addEventListener(LEvent.ENTER_FRAME, onframe);
+        LEvent.addEventListener(window, LKeyboardEvent.KEY_DOWN, keydown);
+        LEvent.addEventListener(window, LKeyboardEvent.KEY_UP, keyUp);
+    }
+
+
+
+    function onframe() {
+        hero.run();
+        for (var i = 0; i < itemLayer.childList.length; i++) {
+            for (var y = 0; y < BibiLayer.childList.length; y++) {
+                if (checkHit(itemLayer.childList[i], BibiLayer.childList[y])) {
+                    backLayer.removeChild(poinTxt);
+                    point++;
+                    addText();
+                    BibiLayer.childList[y].mode = "die";
+                    itemLayer.childList[i].mode = "die";
+                }
+            }
+            if (checkHit(itemLayer.childList[i], hero)) {
+                gameover();
+
+            }
+        }
+
+
+
+        for (var i = 0; i < itemLayer.childList.length; i++) {
+            itemLayer.childList[i].run();
+            if (itemLayer.childList[i].mode == "die") {
+
+                itemLayer.removeChild(itemLayer.childList[i]);
+
+            }
+        }
+
+        for (var y = 0; y < BibiLayer.childList.length; y++) {
+            BibiLayer.childList[y].run();
+            if (BibiLayer.childList[y].mode == "die") {
+                BibiLayer.removeChild(BibiLayer.childList[y]);
+
+            }
+        }
+
+        if (stepindex++ > step) {
+            stepindex = 0; //初始化0就是隔3次调用一次
+            //添加物品
+            addItem();
+
+        }
+        if (stepindex1++ > 10) {
+            stepindex1 = 0;
+            addBIBI();
+
+        }
+
+
+    }
+
+    function gameover() {
+        backLayer.die();
+        itemLayer.removeAllChild();
+        BibiLayer.removeAllChild();
+        var txt = new LTextField();  //创建一个文本层
+        txt.color = "#ff0000";
+        txt.size = 20;
+        txt.text = `游戏失败 积分为${point}`;
+        txt.x = (LGlobal.width - txt.getWidth()) * 0.5;
+        txt.y = 200;
+        overLayer.addChild(txt);
+
+        backLayer.addEventListener(LMouseEvent.MOUSE_DOWN, function (event) {
+            backLayer.die();
+            overLayer.removeAllChild();
+            point = 0;
+            addEvent();
+            backLayer.removeChild(poinTxt);
+            addText();
+            hero.x = 130;
+            hero.y = 480;
+        });
+    }
+
+    function keyUp(e) {
+
+        if (e.keyCode == 37) {
+            hero.mode = "";
+        } else if (e.keyCode == 39) {
+            hero.mode = "";
+        } else if (e.keyCode == 40) {
+            hero.mode = "";
+        } else if (e.keyCode == 38) {
+            hero.mode = "";
+        }
+    }
+    function keydown(e) {
+        if (e.keyCode == 37) {
+            //在左边
+            hero.mode = "left";
+        } else if (e.keyCode == 39) {
+            hero.mode = "right";
+        } else if (e.keyCode == 40) {
+            hero.mode = "bottom";
+        } else if (e.keyCode == 38) {
+            hero.mode = "top";
+        }
+    }
+    function addBackground() {
+        var bitmap = new LBitmap(new LBitmapData(imglist['background']));
+        backLayer.addChild(bitmap);
+    }
+    function addPlayer() {
+        playerLayer = new LSprite();
+        backLayer.addChild(playerLayer);
+        hero = new Player();
+        playerLayer.addChild(hero);
+        hero.x = 130;
+        hero.y = 480;
+    }
+
+    function Player() {
+        base(this, LSprite, []);
+        var self = this;
+        self.mode = "";
+        var list = LGlobal.divideCoordinate(132, 132, 1, 2);
+        var data = new LBitmapData(imglist['me'], 0, 0, 80, 80);
+        self.anime = new LAnimation(self, data, list);
+    }
+
+    Player.prototype.run = function () {
+        //保存作用域区间
+        var self = this;
+        self.anime.onframe();
+        switch (self.mode) {
+            case "left":
+                if (self.x > 5) {
+                    self.x -= 3;
+                }
+                break;
+            case "right":
+                if (self.x < LGlobal.width - self.getWidth()) {
+                    self.x += 3;
+                }
+                break;
+            case "top":
+                if (self.y > 5) {
+                    self.y -= 3;
+                }
+
+                break;
+            case "bottom":
+                if (self.y < LGlobal.height - self.getWidth()) {
+                    self.y += 3;
+                } break;
+        }
+    }
+
+    function addBIBI() {
+        bibi = new Bibi();
+        bibi.x = hero.x + hero.getWidth() * 0.5 - 2;
+        BibiLayer.addChild(bibi);
+    }
+
+    function Bibi() {
+        base(this, LSprite, []);
+        var self = this;
+        self.mode = "";
+        var bitmap = new LBitmap(new LBitmapData(imglist['bibi']));
+        self.y = hero.y + hero.getWidth() * 0.5 - 50;
+        self.addChild(bitmap);
+    }
+    Bibi.prototype.run = function () {
+        var self = this;
+        self.y -= 10;
+        // var hit = self.checkHit();
+        // if (hit || self.y > LGlobal.height) {
+        //     self.mode = "die";
+        //     item.mode = "die";
+        // }
+    }
+
+    function addItem() {
+        item = new Item();
+        item.x = Math.floor(Math.random() * (LGlobal.width - 70));
+        itemLayer.addChild(item);
+    }
+
+    function Item() {
+        base(this, LSprite, []);
+        var self = this;
+        var index = 0;
+        self.mode = "";
+        index = Math.floor(Math.random() * 3);
+
+        var bitmap = new LBitmap(new LBitmapData(imglist['item' + index]));
+        self.addChild(bitmap);
+    }
+    Item.prototype.run = function () {
+        var self = this;
+        self.y += 1;
+    }
+
+
+    function checkHit(obj1, obj2) {
+        hitBibi = obj1;
+        hitItem = obj2;
+
+        if (LGlobal.hitTestArc(obj1, obj2)) {
+            return true;
+
+        } else {
+            return false;
+        }
+
+    }
+
+    function addText() {
+        poinTxt = new LTextField();
+        poinTxt.color = "#ffffff";
+        poinTxt.size = 30;
+        poinTxt.x = 10;
+        poinTxt.y = 10;
+        poinTxt.text = "积分：" + point;
+        backLayer.addChild(poinTxt);
+    }
+</script>
